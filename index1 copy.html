@@ -1,0 +1,169 @@
+<html>
+<head>
+<h1>auto blocking Combination of case</h1>
+
+
+<script>
+
+  // Helper method: Get domains and paths for cookie deletion
+  function getCookieDomainsAndPaths(cookieUrl) {
+      var domains = [window.location.hostname, '.' + window.location.hostname];
+      var paths = ['/', window.location.pathname];
+
+      // Add current directory path
+      var currentDir = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+      if(currentDir !== '/') {
+          paths.push(currentDir);
+      }
+
+      // If cookie has a specific domain/URL, add it to deletion attempts
+      if(cookieUrl) {
+          try {
+              var urlObj = new URL('http://' + cookieUrl.replace(/^https?:\/\//, ''));
+              domains.push(urlObj.hostname);
+              domains.push('.' + urlObj.hostname);
+          } catch(e) {
+              domains.push(cookieUrl);
+              domains.push('.' + cookieUrl);
+          }
+      }
+
+      return { domains: domains, paths: paths };
+  }
+
+  // Helper method to check if a cookie is present (same as before)
+  function isCookiePresent(cookieName) {
+      // Check if the cookie name is followed by '=' in the document.cookie string
+      return document.cookie.indexOf(cookieName + '=') > -1;
+  }
+
+  // Method 1: Delete HTTP cookie with specific domains and paths and VERIFY
+  function deleteHttpCookie(cookieName, domains, paths) {
+      // 1. Execute all deletion attempts
+      domains.forEach(function(domain) {
+          paths.forEach(function(path) {
+              var normalizedPath = path.endsWith('/') ? path : path + '/';
+
+              // Attempt 1: Delete with domain and normalized path
+              document.cookie = cookieName + '=; max-age=0; path=' + normalizedPath + '; domain=' + domain + ';';
+              
+              // Attempt 2: Delete with domain and original path
+              document.cookie = cookieName + '=; max-age=0; path=' + path + '; domain=' + domain + ';';
+
+              // Attempt 3: Delete without domain specification, normalized path
+              document.cookie = cookieName + '=; max-age=0; path=' + normalizedPath + ';';
+
+              // Attempt 4: Delete without domain specification, original path
+              document.cookie = cookieName + '=; max-age=0; path=' + path + ';';
+          });
+      });
+
+      // 2. **Verification Step** (The new part)
+      const isDeleted = !isCookiePresent(cookieName);
+      
+      if (isDeleted) {
+          console.log(`✅ Successfully deleted HTTP cookie: ${cookieName}`);
+      } else {
+          // Log a failure message for debugging
+          console.error(`🚨 FAILED to delete HTTP cookie: ${cookieName}. Check path/domain settings.`);
+      }
+      
+      return isDeleted;
+  }
+
+  // Method 2: Delete localStorage item
+  function deleteLocalStorageItem(itemName) {
+      try {
+          localStorage.removeItem(itemName);
+      } catch(e) {}
+  }
+
+  // Method 3: Delete sessionStorage item
+  function deleteSessionStorageItem(itemName) {
+      try {
+          sessionStorage.removeItem(itemName);
+      } catch(e) {}
+  }
+
+  // Main listener using single_upload_consent_given
+  window.addEventListener('message', function(ev) {
+      if(ev.data.message === 'single_upload_consent_given' && ev.data.consentStatuses) {
+          console.log('User Consent', ev.data.consentStatuses)
+          window.SecuritiSDK.onReady(function(sdk) {
+              Object.keys(ev.data.consentStatuses).forEach(function(categoryName) {
+                  if(!ev.data.consentStatuses[categoryName]) {
+                      console.log('Deleting Coockies for ', categoryName)
+                      var categoryData = sdk.getCookiesByCategory(categoryName);
+                     
+                      if(categoryData && categoryData[categoryName]) {
+                           console.log('Cookies List ', categoryData)
+                          categoryData[categoryName].forEach(function(item) {
+                              console.log('Attempt to Delete ', item)
+                              if(item.name) {
+                                  switch(item.type) {
+                                      case 'http_cookie':
+                                      case 'cookie':
+                                          var domainsAndPaths = getCookieDomainsAndPaths(item.url);
+                                          deleteHttpCookie(item.name, domainsAndPaths.domains, domainsAndPaths.paths);
+                                          break;
+                                      case 'localstorage':
+                                      case 'local_storage':
+                                          deleteLocalStorageItem(item.name);
+                                          break;
+                                      case 'sessionstorage':
+                                      case 'session_storage_item':
+                                      case 'session_storage':
+                                          deleteSessionStorageItem(item.name);
+                                          break;
+                                      default:
+                                          // Handle unknown types or do nothing
+                                          break;
+                                  }
+                              }
+                          });
+                      }
+                  }
+              });
+          });
+      }
+  });
+  
+
+</script>
+
+
+<script type="text/javascript" src="https://cdn-qa.securiti.xyz/consent/auto_blocking/fefd076c-8be0-4bc7-9ad9-63a5256d7d4a/432423d1-478c-41b5-acba-c1fb24d6d575.js"></script>
+
+</head>
+
+<body>
+
+<!-- After adding this script, call setConsentBannerParams({uuid: <unique id> }) to set unique ID for a customer.  -->
+<script>
+(function () {
+    var s = document.createElement('script');
+    s.src = 'https://cdn-qa.securiti.xyz/consent/cookie-consent-sdk-loader.js';
+    s.setAttribute('data-tenant-uuid', 'fefd076c-8be0-4bc7-9ad9-63a5256d7d4a');
+    s.setAttribute('data-domain-uuid', '432423d1-478c-41b5-acba-c1fb24d6d575');
+    s.setAttribute('data-backend-url', 'https://qa.securiti.xyz');
+    s.setAttribute('data-skip-css', 'false');
+    s.defer = true;
+    var parent_node = document.head || document.body;
+    parent_node.appendChild(s);
+})()
+</script>
+
+<!-- You may style the button by overriding class "cmp-revoke-consent" -->
+<button class="cmp-revoke-consent">Revoke Consent</button>
+
+<script src= null></script>
+
+<script src=https://securitiai.github.io/cmpBanners/QA_Websites/CookieConsent/AutoBlocking/CookieOneJs/Cookie1.js></script>
+
+<script src="https://securitiai.github.io/cmpBanners/QA_Websites/CookieConsent/AutoBlocking/CookieTwoJs/Cookie2.js"></script>
+
+
+
+
+</body>
+</html>
